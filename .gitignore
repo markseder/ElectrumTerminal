@@ -1,0 +1,13 @@
+# Local credentials and Arduino build output
+secrets.h
+config.h
+*.local.h
+build/
+.pio/
+.vscode/
+*.bin
+*.elf
+*.map
+*.zip
+.DS_Store
+Thumbs.db
