@@ -6,6 +6,187 @@
 
 The current firmware baseline is **V4.2 UI Status LED**.
 
+
+## Quick configuration — English
+
+If you use the same ESP32-2432S028R CYD board and wiring described in this repository, edit only the settings below near the beginning of `ElectrumTerminal.ino`.
+
+### 1. Create a password for the terminal setup network
+
+Find:
+
+```cpp
+const char* CONFIG_AP_PASS = "ENTER_YOUR_AP_PASSWORD";
+```
+
+Replace the placeholder with your own password containing at least 8 characters:
+
+```cpp
+const char* CONFIG_AP_PASS = "Electrum2026";
+```
+
+This is the password for the temporary `ElectrumTerminal` setup access point. It is not the password for your home router.
+
+### 2. Enter your OpenWeatherMap API key
+
+Find:
+
+```cpp
+const char* OPENWEATHER_API_KEY = "ENTER_YOUR_OPENWEATHER_API_KEY";
+```
+
+Create a key at [OpenWeatherMap](https://openweathermap.org/api) and paste it between the quotation marks:
+
+```cpp
+const char* OPENWEATHER_API_KEY = "your_real_api_key";
+```
+
+Keep the quotation marks and the semicolon.
+
+### 3. Set the fallback location
+
+These coordinates are used before GPS obtains a fix:
+
+```cpp
+const float DEFAULT_LAT = 59.56;
+const float DEFAULT_LON = 150.80;
+```
+
+Replace them with the latitude and longitude of your city in decimal degrees. The example values are for Magadan and can be left unchanged by users in Magadan.
+
+### 4. Set the fallback timezone
+
+Find:
+
+```cpp
+const long DEFAULT_GMT_OFFSET_SEC = 11 * 3600;
+```
+
+Examples:
+
+```cpp
+// Moscow, UTC+3
+const long DEFAULT_GMT_OFFSET_SEC = 3 * 3600;
+
+// Vladivostok, UTC+10
+const long DEFAULT_GMT_OFFSET_SEC = 10 * 3600;
+
+// Magadan, UTC+11
+const long DEFAULT_GMT_OFFSET_SEC = 11 * 3600;
+```
+
+### 5. Leave home Wi-Fi empty
+
+The recommended public configuration is:
+
+```cpp
+const char* DEFAULT_WIFI_SSID = "";
+const char* DEFAULT_WIFI_PASS = "";
+```
+
+After flashing the firmware:
+
+1. Connect to the `ElectrumTerminal` Wi-Fi network.
+2. Enter the password specified in `CONFIG_AP_PASS`.
+3. Open [http://192.168.4.1](http://192.168.4.1).
+4. Enter the SSID and password of your home Wi-Fi.
+5. Save the settings. The terminal stores them and restarts.
+
+For the standard hardware build, do not change display, touch, GPS, BMP580 or RGB LED pins.
+
+**Magadan users only need to replace `CONFIG_AP_PASS` and `OPENWEATHER_API_KEY`.**
+
+---
+
+## Быстрая настройка — Русский
+
+Если используется такая же плата ESP32-2432S028R CYD и подключение из этого репозитория, в начале файла `ElectrumTerminal.ino` нужно изменить только указанные ниже параметры.
+
+### 1. Придумайте пароль настроечной сети терминала
+
+Найдите:
+
+```cpp
+const char* CONFIG_AP_PASS = "ENTER_YOUR_AP_PASSWORD";
+```
+
+Замените заглушку своим паролем длиной не менее 8 символов:
+
+```cpp
+const char* CONFIG_AP_PASS = "Electrum2026";
+```
+
+Это пароль временной Wi-Fi-сети `ElectrumTerminal`, а не пароль домашнего роутера.
+
+### 2. Введите API-ключ OpenWeatherMap
+
+Найдите:
+
+```cpp
+const char* OPENWEATHER_API_KEY = "ENTER_YOUR_OPENWEATHER_API_KEY";
+```
+
+Создайте ключ на сайте [OpenWeatherMap](https://openweathermap.org/api) и вставьте его между кавычками:
+
+```cpp
+const char* OPENWEATHER_API_KEY = "ваш_настоящий_API_ключ";
+```
+
+Кавычки и точку с запятой в конце строки оставьте.
+
+### 3. Укажите резервное местоположение
+
+Эти координаты используются до получения GPS-фикса:
+
+```cpp
+const float DEFAULT_LAT = 59.56;
+const float DEFAULT_LON = 150.80;
+```
+
+Замените их широтой и долготой своего города в десятичных градусах. В примере указаны координаты Магадана — жителям Магадана их менять не нужно.
+
+### 4. Укажите резервный часовой пояс
+
+Найдите:
+
+```cpp
+const long DEFAULT_GMT_OFFSET_SEC = 11 * 3600;
+```
+
+Примеры:
+
+```cpp
+// Москва, UTC+3
+const long DEFAULT_GMT_OFFSET_SEC = 3 * 3600;
+
+// Владивосток, UTC+10
+const long DEFAULT_GMT_OFFSET_SEC = 10 * 3600;
+
+// Магадан, UTC+11
+const long DEFAULT_GMT_OFFSET_SEC = 11 * 3600;
+```
+
+### 5. Оставьте домашний Wi-Fi пустым
+
+Рекомендуемая настройка публичной прошивки:
+
+```cpp
+const char* DEFAULT_WIFI_SSID = "";
+const char* DEFAULT_WIFI_PASS = "";
+```
+
+После загрузки прошивки:
+
+1. Подключитесь к Wi-Fi-сети `ElectrumTerminal`.
+2. Введите пароль, заданный в `CONFIG_AP_PASS`.
+3. Откройте [http://192.168.4.1](http://192.168.4.1).
+4. Введите название и пароль домашней Wi-Fi-сети.
+5. Сохраните настройки. Терминал запомнит их и перезагрузится.
+
+Для стандартной аппаратной сборки не меняйте пины дисплея, тачскрина, GPS, BMP580 и RGB-светодиода.
+
+**Пользователю из Магадана достаточно заменить только `CONFIG_AP_PASS` и `OPENWEATHER_API_KEY`.**
+
 ### Main screens
 
 - **HOME** — clock, location, External weather and Internal BMP580 readings
