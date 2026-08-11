@@ -31,6 +31,180 @@ The current firmware baseline is **V4.2 UI Status LED**.
 - Partial sprite buffering to reduce display flicker
 - Automatic Wi-Fi reconnection and periodic data refresh
 
+## Quick start
+
+Follow these steps for the standard ESP32-2432S028R CYD build documented in this repository.
+
+### 1. Install Arduino IDE and ESP32 support
+
+1. Install Arduino IDE 2.x.
+2. Open **File → Preferences**.
+3. Add the Espressif ESP32 board package URL to **Additional Boards Manager URLs**:
+
+   ```text
+   https://espressif.github.io/arduino-esp32/package_esp32_index.json
+   ```
+
+4. Open **Tools → Board → Boards Manager**, search for `esp32`, and install **esp32 by Espressif Systems**.
+5. Select **ESP32 Dev Module** as the board for the standard CYD.
+
+### 2. Install the required libraries
+
+Open **Tools → Manage Libraries** and install:
+
+- `TFT_eSPI`
+- `XPT2046_Touchscreen`
+- `ArduinoJson`
+- `TinyGPSPlus`
+- `Adafruit Unified Sensor`
+- `Adafruit BMP5xx`
+
+WiFi, HTTPClient, WebServer, Preferences, Wire and SPI are included with the ESP32 board package.
+
+### 3. Configure TFT_eSPI
+
+TFT_eSPI must be configured before compilation. In the TFT_eSPI library folder, open `User_Setup.h` or create/select a custom setup through `User_Setup_Select.h`.
+
+Use these values for the standard ESP32-2432S028R CYD:
+
+```cpp
+#define ILI9341_2_DRIVER
+
+#define TFT_MISO 12
+#define TFT_MOSI 13
+#define TFT_SCLK 14
+#define TFT_CS   15
+#define TFT_DC    2
+#define TFT_RST  -1
+
+#define LOAD_GLCD
+#define LOAD_FONT2
+#define LOAD_FONT4
+#define LOAD_FONT6
+#define LOAD_FONT7
+#define LOAD_FONT8
+#define LOAD_GFXFF
+
+#define SPI_FREQUENCY  55000000
+```
+
+If another display driver remains enabled in TFT_eSPI, the screen may show coloured noise or remain blank.
+
+### 4. Open the firmware
+
+Open:
+
+```text
+firmware/ElectrumTerminal/ElectrumTerminal.ino
+```
+
+All settings a normal user may need are grouped near the beginning under `USER CONFIGURATION`.
+
+### 5. Change the required values
+
+Find this block and replace the placeholders:
+
+```cpp
+const char* CONFIG_AP_PASS = "ENTER_YOUR_AP_PASSWORD";
+const char* OPENWEATHER_API_KEY = "ENTER_YOUR_OPENWEATHER_API_KEY";
+
+const float DEFAULT_LAT = 59.56;
+const float DEFAULT_LON = 150.80;
+const long DEFAULT_GMT_OFFSET_SEC = 11 * 3600;
+```
+
+Example for a user in UTC+3:
+
+```cpp
+const char* CONFIG_AP_PASS = "MyTerminal2026";
+const char* OPENWEATHER_API_KEY = "paste_your_real_key_here";
+
+const float DEFAULT_LAT = 55.7558;
+const float DEFAULT_LON = 37.6173;
+const long DEFAULT_GMT_OFFSET_SEC = 3 * 3600;
+```
+
+Do not include extra spaces outside the quotation marks, and keep the terminating semicolon.
+
+### 6. Get an OpenWeatherMap key
+
+1. Create an account at [OpenWeatherMap](https://openweathermap.org/).
+2. Open the **API keys** section in your account.
+3. Create or copy a key.
+4. Paste it between the quotation marks in `OPENWEATHER_API_KEY`.
+
+A newly created key may require some time before it becomes active. Open-Meteo weather works without a key, but OpenWeatherMap is used as a fallback and for location metadata.
+
+### 7. Set coordinates and timezone
+
+Use the coordinates of the location that should be shown before GPS obtains a fix.
+
+- Open a map service.
+- Right-click or long-press the desired point.
+- Copy latitude and longitude in decimal degrees.
+- Latitude comes first, longitude second.
+
+Timezone values:
+
+| Timezone | Code value |
+|---|---|
+| UTC−8 | `-8 * 3600` |
+| UTC−5 | `-5 * 3600` |
+| UTC | `0` |
+| UTC+3 | `3 * 3600` |
+| UTC+8 | `8 * 3600` |
+| UTC+11 | `11 * 3600` |
+
+The GPS and online weather metadata can update the active timezone later. The default value is the startup/fallback timezone.
+
+### 8. Choose how Wi-Fi is configured
+
+Recommended public configuration:
+
+```cpp
+const char* DEFAULT_WIFI_SSID = "";
+const char* DEFAULT_WIFI_PASS = "";
+```
+
+After flashing:
+
+1. The terminal attempts to connect to saved/default Wi-Fi.
+2. If connection fails, it creates the `ElectrumTerminal` access point.
+3. Connect a phone or computer to that access point using `CONFIG_AP_PASS`.
+4. Open [http://192.168.4.1](http://192.168.4.1).
+5. Enter the home Wi-Fi SSID and password.
+6. Save the settings; the terminal restarts and stores them in Preferences.
+
+Alternatively, a private build can contain a default network:
+
+```cpp
+const char* DEFAULT_WIFI_SSID = "YourWiFiName";
+const char* DEFAULT_WIFI_PASS = "YourWiFiPassword";
+```
+
+Never commit real Wi-Fi credentials or API keys to a public repository.
+
+### 9. Compile and upload
+
+1. Connect the CYD to the computer with a data-capable USB cable.
+2. Select the correct serial port under **Tools → Port**.
+3. Click **Verify**.
+4. Fix any missing-library or TFT_eSPI configuration errors.
+5. Click **Upload**.
+6. Open Serial Monitor at **115200 baud** for connection and sensor diagnostics.
+
+### 10. First startup checklist
+
+Confirm that:
+
+- the display shows the Electrum Terminal interface rather than coloured noise;
+- touch buttons respond in the correct orientation;
+- the setup portal accepts Wi-Fi credentials;
+- SYSTEM shows Wi-Fi as online and displays an IP address;
+- GPS changes from WAIT to FIX outdoors;
+- BMP580 shows Internal temperature and pressure;
+- weather and market status values update without HTTP errors.
+
 ## Hardware
 
 | Component | Connection |
@@ -103,16 +277,18 @@ The public firmware contains no personal network credentials.
 
 When the saved/default network is unavailable, connect to the Electrum Terminal setup access point and open `http://192.168.4.1`.
 
-### Hardware settings
+### Do not change for the standard CYD build
 
-The included values match the documented ESP32-2432S028R CYD build. Change them only for different hardware:
+Leave these values unchanged when using the hardware and wiring documented in this repository:
 
-- `GPS_ENABLED`, `GPS_RX_PIN`, `GPS_TX_PIN`, `GPS_BAUD`
-- `BMP580_ENABLED`, SDA/SCL pins and I²C address
-- display rotation and backlight pin
-- XPT2046 touch pins and `RAW_X/Y` calibration values
-- RGB LED pins and `RGB_ACTIVE_LOW`
-- automatic refresh intervals
+- TFT pins, `DISPLAY_ROTATION` and `TFT_BACKLIGHT_PIN`
+- XPT2046 pins and `TOUCH_BASE_ROTATION`
+- GPS RX on GPIO35 and baud rate 9600
+- BMP580 SDA GPIO27, SCL GPIO22 and address 0x47
+- RGB LED pins GPIO17/GPIO16/GPIO4 and `RGB_ACTIVE_LOW`
+- weather, market, sensor and redraw intervals
+
+Change hardware pins only when you deliberately use another board or wiring layout. Change `RAW_X_MIN`, `RAW_X_MAX`, `RAW_Y_MIN` and `RAW_Y_MAX` only when touch calibration is inaccurate.
 
 ### External services
 
@@ -150,14 +326,24 @@ External services may change their formats, limits or availability.
 
 ```text
 ElectrumTerminal/
-├── firmware/
-│   └── ElectrumTerminal/
-│       └── ElectrumTerminal.ino
+├── firmware/ElectrumTerminal/
+│   └── ElectrumTerminal.ino
+├── docs/
+│   ├── HARDWARE.md
+│   └── DEVELOPMENT_NOTES.md
+├── hardware/
+│   ├── enclosure/
+│   │   ├── STL/
+│   │   ├── STEP/
+│   │   └── source/
+│   └── wiring/
+├── images/
+│   ├── device/
+│   ├── screens/
+│   ├── assembly/
+│   └── renders/
 ├── README.md
-├── CHANGELOG.md
-└── docs/
-    ├── HARDWARE.md
-    └── DEVELOPMENT_NOTES.md
+└── CHANGELOG.md
 ```
 
 ## Project status
