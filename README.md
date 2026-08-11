@@ -98,7 +98,7 @@ Change the default configuration access-point password before using the device o
 
 ## Opening the firmware
 
-Open `firmware/ElectrumTerminal/ElectrumTerminal.ino` in Arduino IDE. The numbered `.ino` tabs are consecutive parts of the same 4340-line sketch and are concatenated automatically by the Arduino build system. Keep all files together in the `ElectrumTerminal` folder.
+Open `firmware/ElectrumTerminal/ElectrumTerminal.ino` in Arduino IDE.
 
 ## Data sources
 
@@ -119,8 +119,7 @@ External services may change their formats, limits or availability.
 ElectrumTerminal/
 ├── firmware/
 │   └── ElectrumTerminal/
-│       ├── ElectrumTerminal.ino
-│       └── 01_Firmware.ino … 10_Firmware.ino
+│       └── ElectrumTerminal.ino
 ├── README.md
 ├── CHANGELOG.md
 └── docs/
