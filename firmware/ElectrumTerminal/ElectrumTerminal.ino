@@ -26,32 +26,53 @@
 // =====================================================
 
 // =====================================================
-// WIFI
+// USER CONFIGURATION
+// =====================================================
+// REQUIRED:
+// 1. Enter an OpenWeatherMap API key below. Create one at openweathermap.org.
+// 2. Change CONFIG_AP_PASS. It must contain at least 8 characters.
+// 3. Set DEFAULT_LAT, DEFAULT_LON and DEFAULT_GMT_OFFSET_SEC for the
+//    location used before GPS obtains a fix.
+//
+// WI-FI OPTIONS:
+// - Leave DEFAULT_WIFI_SSID and DEFAULT_WIFI_PASS empty to configure Wi-Fi
+//   from the device setup portal.
+// - Alternatively, enter a default network here for automatic connection.
+//
+// HARDWARE OPTIONS:
+// - Change GPS, BMP580, touch, RGB LED and display pins only when using
+//   hardware different from the documented ESP32-2432S028R CYD build.
+// - Recalibrate RAW_X/Y values if touch coordinates are inaccurate.
+// =====================================================
+
+// =====================================================
+// WI-FI — OPTIONAL DEFAULT NETWORK
 // =====================================================
 const char* DEFAULT_WIFI_SSID = "";
 const char* DEFAULT_WIFI_PASS = "";
 
+// Setup access point. Change the SSID if desired; change the password.
 const char* CONFIG_AP_SSID = "ElectrumTerminal";
-const char* CONFIG_AP_PASS = "CHANGE_ME";
+const char* CONFIG_AP_PASS = "ENTER_YOUR_AP_PASSWORD";
 
 // =====================================================
-// OPENWEATHERMAP API
+// OPENWEATHERMAP API — REQUIRED FOR FALLBACK WEATHER AND LOCATION METADATA
 // =====================================================
-const char* OPENWEATHER_API_KEY = "YOUR_OPENWEATHER_API_KEY";
+const char* OPENWEATHER_API_KEY = "ENTER_YOUR_OPENWEATHER_API_KEY";
 
 // =====================================================
-// LOCATION — DEFAULT MAGADAN + OPTIONAL GPS
+// FALLBACK LOCATION — CHANGE FOR THE USER'S REGION
 // =====================================================
-const float DEFAULT_LAT = 59.56;
-const float DEFAULT_LON = 150.80;
-const long DEFAULT_GMT_OFFSET_SEC = 11 * 3600;
+const float DEFAULT_LAT = 59.56;                  // Example: Magadan
+const float DEFAULT_LON = 150.80;                 // Example: Magadan
+const long DEFAULT_GMT_OFFSET_SEC = 11 * 3600;   // Example: UTC+11
 const int DAYLIGHT_OFFSET_SEC = 0;
 
 // GPS module is optional.
 // If GPS is not connected or there is no fix, terminal uses Magadan by default.
 // Wiring:
-//   GPS TX -> ESP32 GPIO35
-//   GPS RX is not used
+//   GPS TX -> ESP32 GPIO27
+//   GPS RX -> ESP32 GPIO22  optional, can be left disconnected
 //   GPS VCC -> 3.3V or 5V according to your GPS module
 //   GPS GND -> GND
 #define GPS_ENABLED 1
@@ -109,11 +130,10 @@ TFT_eSPI tft = TFT_eSPI();
 // =====================================================
 // SPRITE BUFFER
 // =====================================================
-// На ESP32-2432S028R полный экран 320x240 в 16 бит = около 150 KB.
-// С Wi-Fi и JSON это может быть тяжело, поэтому используем безопасную
-// частичную двойную буферизацию: header, карточки, footer, overlay.
-// Визуально это убирает основное мигание, потому что на экран уходит
-// уже готовый блок, а не процесс рисования каждой строки.
+// A full 320x240 16-bit framebuffer uses about 150 KB on the ESP32-2432S028R.
+// Wi-Fi and JSON also require substantial memory, so the firmware uses safe
+// partial double buffering for the header, cards, footer and overlay.
+// Each completed block is pushed to the display at once to reduce flicker.
 TFT_eSprite spr = TFT_eSprite(&tft);
 
 bool beginSprite(int w, int h, uint16_t bg) {
@@ -153,7 +173,7 @@ SPIClass touchSPI = SPIClass(VSPI);
 
 XPT2046_Touchscreen ts(TOUCH_CS, TOUCH_IRQ);
 
-// Если тач зеркалит — меняй местами MIN/MAX или включай TOUCH_SWAP_X/Y ниже
+// If touch is mirrored, swap the MIN/MAX values or enable TOUCH_SWAP_X/Y below.
 #define RAW_X_MIN 200
 #define RAW_X_MAX 3900
 #define RAW_Y_MIN 200
@@ -437,17 +457,17 @@ uint16_t pressureColorMmHg(float hpa) {
   float mmhg = pressureMmHgValue(hpa);
   if (isnan(mmhg)) return TFT_LIGHTGREY;
 
-  if (mmhg < 750.0f) return TFT_CYAN;   // низкое давление
-  if (mmhg <= 760.0f) return TFT_GREEN; // нормальный диапазон
-  return TFT_RED;                       // высокое давление
+  if (mmhg < 750.0f) return TFT_CYAN;   // Low pressure
+  if (mmhg <= 760.0f) return TFT_GREEN; // Normal range
+  return TFT_RED;                       // High pressure
 }
 
 uint16_t weatherTitleColor(float temp) {
   if (isnan(temp)) return TFT_CYAN;
 
-  if (temp < 0.0f) return TFT_CYAN;     // мороз
-  if (temp <= 13.0f) return TFT_GREEN;  // прохладно/нормально
-  return TFT_RED;                       // тепло/жарко
+  if (temp < 0.0f) return TFT_CYAN;     // Freezing
+  if (temp <= 13.0f) return TFT_GREEN;  // Cool/normal
+  return TFT_RED;                       // Warm/hot
 }
 
 String shortPayload(String s, int maxLen = 220) {
@@ -544,8 +564,8 @@ bool getTouchXY(int &x, int &y) {
   if (TOUCH_INVERT_X) sx = W - 1 - sx;
   if (TOUCH_INVERT_Y) sy = H - 1 - sy;
 
-  // Если экран развёрнут на 180 градусов, тач тоже разворачиваем.
-  // ts.setRotation() при этом НЕ меняем, иначе будет двойная коррекция координат.
+  // Rotate touch coordinates when the display is rotated by 180 degrees.
+  // Do not change ts.setRotation() here, otherwise coordinates are corrected twice.
   if (displayRotation == 3) {
     sx = W - 1 - sx;
     sy = H - 1 - sy;
@@ -625,9 +645,9 @@ void saveDisplayRotation() {
 void applyDisplayRotation() {
   tft.setRotation(displayRotation);
 
-  // ВАЖНО: XPT2046 оставляем в базовой ориентации.
-  // Экран вращаем через TFT_eSPI, а координаты тача разворачиваем вручную в getTouchXY().
-  // Если одновременно делать ts.setRotation(3) и вручную инвертировать X/Y, тач получается двойно перевернутым.
+  // Keep the XPT2046 in its base orientation.
+  // TFT_eSPI rotates the display while getTouchXY() rotates touch coordinates manually.
+  // Combining ts.setRotation(3) with manual X/Y inversion would rotate touch twice.
   ts.setRotation(TOUCH_BASE_ROTATION);
 
   W = tft.width();
@@ -1783,7 +1803,7 @@ bool fetchWeather() {
   weatherOK = false;
   forecastOK = false;
 
-  // Старые данные не затираем, чтобы экран не превращался в кладбище прочерков.
+  // Keep the previous valid values so the screen does not fill with placeholders.
   return false;
 }
 
@@ -2409,8 +2429,8 @@ bool fetchEarthquakes() {
 }
 
 void fetchAllData() {
-  // V2.5.2: без всплывающей плашки и без лишней графики во время HTTP.
-  // Так меньше шанс словить ребут из-за нехватки RAM/фрагментации памяти.
+  // V2.5.2: avoid overlays and extra drawing during HTTP requests.
+  // This reduces the risk of resets caused by low or fragmented RAM.
   dataBusy = true;
   busyText = "UPDATING";
   Serial.println("BUSY: UPDATE ALL");
@@ -2451,8 +2471,8 @@ void fetchAllData() {
 }
 
 void updateCurrentScreenData() {
-  // V2.5.2: кнопка UPDATE обновляет только то, что реально нужно текущему экрану.
-  // На FORECAST больше не гоняем USD/RUB и GOLD, поэтому не забиваем память лишними HTTPS+JSON.
+  // V2.5.2: UPDATE refreshes only the data required by the current screen.
+  // Forecast updates no longer load USD/RUB and gold, avoiding unnecessary HTTPS and JSON allocations.
   if (dataBusy) return;
 
   dataBusy = true;
@@ -2647,9 +2667,9 @@ void drawLabelValue(int x, int y, const String& label, const String& value, uint
 }
 
 void drawBusyOverlay(const String& msg) {
-  // V2.4: визуальную плашку загрузки убрали полностью.
-  // dataBusy всё ещё блокирует случайные тачи во время HTTP-запросов,
-  // но экран больше не закрывается прямоугольником MARKET... / WEATHER...
+  // V2.4: the visual loading overlay was removed.
+  // dataBusy still blocks accidental touches during HTTP requests,
+  // but the display is no longer covered by a MARKET or WEATHER rectangle.
   Serial.print("BUSY: ");
   Serial.println(msg);
 }
@@ -2970,8 +2990,8 @@ void drawHeaderDirect() {
 }
 
 void drawHeader() {
-  // Header рисуем в спрайт 314x47 и отправляем одним куском.
-  // Это убирает видимое стирание верхней зоны каждую секунду.
+  // Draw the 314x47 header in a sprite and push it as one block.
+  // This prevents visible clearing of the top area every second.
   const int sx = 3;
   const int sy = 3;
   const int sw = 314;
@@ -3848,8 +3868,8 @@ void drawSystemScreen() {
   y += step;
   drawLabelValue(14, y, "Error", lastHttpError, lastHttpError == "OK" ? TFT_GREEN : TFT_RED);
 
-  // Нижнюю строку Web/JSON убрали полностью:
-  // IP уже показан выше, а длинный текст накладывался на системные строки.
+  // The bottom Web/JSON line was removed.
+  // The IP address is already shown above, and the long text overlapped system rows.
   tft.fillRect(12, 216, W - 24, 18, TFT_BLACK);
 }
 
@@ -3871,9 +3891,9 @@ void goScreen(int m) {
 }
 
 bool touchBack(int tx, int ty) {
-  // Увеличенная зона BACK: на маленьком резистивном таче XPT2046
-  // попадать точно в 76x30 иногда неудобно, особенно после поворота экрана.
-  // Визуальная кнопка остается прежней, но зона нажатия шире.
+  // Use a larger BACK touch target because the small XPT2046 resistive panel
+  // can be difficult to hit precisely, especially after display rotation.
+  // The visual button remains unchanged while its active touch area is wider.
   return inBox(tx, ty, 0, 0, 112, 52);
 }
 
@@ -4160,7 +4180,7 @@ void setup() {
 
   Serial.println();
   Serial.println("======================================");
-  Serial.println("Electrum TERMINAL V4.2 UI STATUS LED START");
+  Serial.println("Electrum TERMINAL V4.1 UI CLEANUP START");
   Serial.println("======================================");
 
   pinMode(TFT_BACKLIGHT_PIN, OUTPUT);
@@ -4217,9 +4237,9 @@ void setup() {
   bootTimeStr = getShortTimeStr();
 
   // V2.9.1 FAST START:
-  // Не грузим на старте тяжёлые API серебра/нефти.
-  // На некоторых сетях Yahoo/gold-api может долго отвечать, и экран висит на Loading market.
-  // Сначала показываем интерфейс, а данные подтягиваются выборочно.
+  // Do not load the slower silver and oil services during startup.
+  // Yahoo or Gold API may respond slowly on some networks and delay the market screen.
+  // Show the interface first and fetch additional data only when needed.
   drawStartupScreen("Loading basic data...");
 
   // GPS is optional. Short initial poll only; if there is no module/fix,
@@ -4278,7 +4298,7 @@ void loop() {
     } else if (currentScreen == SCREEN_MENU) {
       drawHeader();
     } else if (currentScreen == SCREEN_SYSTEM) {
-      // Чтобы SYSTEM не мигал каждую секунду, обновляем только периодически полной перерисовкой.
+      // Avoid redrawing SYSTEM every second to prevent flicker; use periodic full redraws instead.
     }
   }
 
@@ -4313,8 +4333,8 @@ void loop() {
 
       dataBusy = true;
       Serial.println("BUSY: AUTO MARKET BASIC ONLY");
-      // Автообновление — только лёгкий основной рынок для HOME.
-      // Серебро и нефть грузим только при входе на COMMOD или по UPDATE на COMMOD.
+      // Automatic updates load only the lightweight market data used on HOME.
+      // Silver and oil are loaded when entering COMMOD or pressing UPDATE there.
       fetchUsdRub();
       yield();
       delay(10);
@@ -4332,7 +4352,7 @@ void loop() {
   if (!dataBusy && millis() - lastFullRedrawMs > FULL_REDRAW_INTERVAL) {
     lastFullRedrawMs = millis();
 
-    // Редкий санитарный полный redraw. Основная работа теперь частичная.
+    // Perform an occasional full redraw; normal updates use partial redraws.
     redrawCurrentScreen();
   }
 
