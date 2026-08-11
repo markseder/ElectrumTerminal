@@ -4,7 +4,7 @@
 
 ## Current firmware
 
-The documented development baseline is **V4.2 UI Status LED**. The firmware source will be added after the complete, non-truncated sketch is recovered.
+The current firmware baseline is **V4.2 UI Status LED**.
 
 ### Main screens
 
@@ -96,6 +96,10 @@ If Wi-Fi credentials are empty or the connection fails, the device starts its co
 
 Change the default configuration access-point password before using the device outside a trusted environment.
 
+## Opening the firmware
+
+Open `firmware/ElectrumTerminal/ElectrumTerminal.ino` in Arduino IDE. The numbered `.ino` tabs are consecutive parts of the same 4340-line sketch and are concatenated automatically by the Arduino build system. Keep all files together in the `ElectrumTerminal` folder.
+
 ## Data sources
 
 - Open-Meteo — primary weather
@@ -113,6 +117,10 @@ External services may change their formats, limits or availability.
 
 ```text
 ElectrumTerminal/
+├── firmware/
+│   └── ElectrumTerminal/
+│       ├── ElectrumTerminal.ino
+│       └── 01_Firmware.ino … 10_Firmware.ino
 ├── README.md
 ├── CHANGELOG.md
 └── docs/
@@ -122,7 +130,7 @@ ElectrumTerminal/
 
 ## Project status
 
-The device firmware is functional and under active development. The repository documentation is ready; the source upload is temporarily pending because the available attached copy ends inside `drawSystemScreen()` and is incomplete. The next recommended technical work is to improve network request scheduling, reduce dynamic-memory fragmentation, move all secrets out of source code, and update weather only when the GPS location changes materially.
+The firmware is functional and under active development. The next recommended technical work is to improve network request scheduling, reduce dynamic-memory fragmentation, move all secrets out of source code, and update weather only when the GPS location changes materially.
 
 ## Author
 
