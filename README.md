@@ -4,7 +4,7 @@
 
 ## Current firmware
 
-The current snapshot is **V4.2 UI Status LED**.
+The documented development baseline is **V4.2 UI Status LED**. The firmware source will be added after the complete, non-truncated sketch is recovered.
 
 ### Main screens
 
@@ -113,7 +113,6 @@ External services may change their formats, limits or availability.
 
 ```text
 ElectrumTerminal/
-├── Electrum_TERMINAL_V4_2_UI_STATUS_LED.ino
 ├── README.md
 ├── CHANGELOG.md
 └── docs/
@@ -123,7 +122,7 @@ ElectrumTerminal/
 
 ## Project status
 
-The firmware is functional and under active development. The next recommended technical work is to improve network request scheduling, reduce dynamic-memory fragmentation, move all secrets out of source code, and update weather only when the GPS location changes materially.
+The device firmware is functional and under active development. The repository documentation is ready; the source upload is temporarily pending because the available attached copy ends inside `drawSystemScreen()` and is incomplete. The next recommended technical work is to improve network request scheduling, reduce dynamic-memory fragmentation, move all secrets out of source code, and update weather only when the GPS location changes materially.
 
 ## Author
 
