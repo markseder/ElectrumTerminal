@@ -81,20 +81,53 @@ Configure these values in your TFT_eSPI user setup before compiling.
 
 ## Configuration before upload
 
-The public firmware does not contain personal Wi-Fi credentials or a live OpenWeatherMap key. In the sketch, configure:
+All user-editable values are grouped near the top of the sketch under `USER CONFIGURATION`.
 
-```cpp
-const char* DEFAULT_WIFI_SSID = "";
-const char* DEFAULT_WIFI_PASS = "";
-const char* OPENWEATHER_API_KEY = "YOUR_OPENWEATHER_API_KEY";
-```
+### Required settings
 
-If Wi-Fi credentials are empty or the connection fails, the device starts its configuration access point:
+| Setting | What to enter |
+|---|---|
+| `OPENWEATHER_API_KEY` | Your key from [OpenWeatherMap](https://openweathermap.org/api). Use `ENTER_YOUR_OPENWEATHER_API_KEY` only as a placeholder. |
+| `CONFIG_AP_PASS` | A new password of at least 8 characters for the device setup access point. |
+| `DEFAULT_LAT` | Fallback latitude used before GPS obtains a fix. |
+| `DEFAULT_LON` | Fallback longitude used before GPS obtains a fix. |
+| `DEFAULT_GMT_OFFSET_SEC` | Fallback UTC offset in seconds, for example `3 * 3600` for UTC+3. |
 
-- SSID: `ElectrumTerminal`
-- Setup page: `http://192.168.4.1`
+### Wi-Fi setup
 
-Change the default configuration access-point password before using the device outside a trusted environment.
+The public firmware contains no personal network credentials.
+
+- Recommended: leave `DEFAULT_WIFI_SSID` and `DEFAULT_WIFI_PASS` empty and configure Wi-Fi from the device web portal.
+- Optional: enter a default SSID and password in the sketch for automatic connection.
+- The setup access point name is controlled by `CONFIG_AP_SSID`.
+
+When the saved/default network is unavailable, connect to the Electrum Terminal setup access point and open `http://192.168.4.1`.
+
+### Hardware settings
+
+The included values match the documented ESP32-2432S028R CYD build. Change them only for different hardware:
+
+- `GPS_ENABLED`, `GPS_RX_PIN`, `GPS_TX_PIN`, `GPS_BAUD`
+- `BMP580_ENABLED`, SDA/SCL pins and I²C address
+- display rotation and backlight pin
+- XPT2046 touch pins and `RAW_X/Y` calibration values
+- RGB LED pins and `RGB_ACTIVE_LOW`
+- automatic refresh intervals
+
+### External services
+
+| Service | Purpose | User API key |
+|---|---|---|
+| Open-Meteo | Primary weather | No |
+| OpenWeatherMap | Fallback weather, country, city and timezone | **Yes** |
+| open.er-api.com | Currency rates | No |
+| Gold API | Gold and silver prices | No key in the current endpoint |
+| Yahoo Finance | Brent and WTI prices | No |
+| USGS | Earthquakes | No |
+| NOAA SWPC | Space-weather data retained in firmware | No |
+| NTP servers | Time synchronization | No |
+
+Third-party services can change their endpoints, policies or rate limits.
 
 ## Opening the firmware
 
